@@ -4,20 +4,13 @@ k8s setup commands on ec2
 🚀 Kubernetes Setup on EC2 (1 Master, 2 Workers)
 🔹 Step 1: Prepare All Nodes (Master & Workers)
 1. Update System Packages
-bash
-Copy
-Edit
 sudo apt-get update && sudo apt-get upgrade -y
+
 2. Disable Swap (Required for K8s)
-bash
-Copy
-Edit
 swapoff -a
 sed -i '/swap/d' /etc/fstab
+
 3. Load Kernel Modules & Set Network Parameters
-bash
-Copy
-Edit
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
@@ -34,41 +27,28 @@ EOF
 
 sudo sysctl --system
 🔹 Step 2: Install Docker (Container Runtime)
-bash
-Copy
-Edit
 sudo apt install -y docker.io
 sudo systemctl enable --now docker
 sudo chmod 666 /var/run/docker.sock
+
 🔹 Step 3: Install Kubernetes Components (Master & Workers)
 1. Install Required Packages
-bash
-Copy
-Edit
 sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
 sudo mkdir -p -m 755 /etc/apt/keyrings
+
 2. Add Kubernetes Repository
-bash
-Copy
-Edit
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
 3. Install kubeadm, kubelet, and kubectl
-bash
-Copy
-Edit
 sudo apt update
 sudo apt install -y kubeadm=1.32.1-1.1 kubelet=1.32.1-1.1 kubectl=1.32.1-1.1
 sudo systemctl enable --now kubelet
+
 🔹 Step 4: Initialize Kubernetes Master Node (Run Only on Master)
-bash
-Copy
-Edit
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16
+
 1. Configure kubectl for Master Node
-bash
-Copy
-Edit
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
@@ -77,51 +57,25 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 2. Get Worker Join Command
 Run this on the Master Node and copy the output:
 
-bash
-Copy
-Edit
 kubeadm token create --print-join-command
-Example Output:
 
-bash
-Copy
-Edit
-kubeadm join <MASTER-IP>:6443 --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH>
 🔹 Step 5: Join Worker Nodes to Cluster
 Run this on each Worker Node using the command copied from Step 4.2:
-
-bash
-Copy
-Edit
 kubeadm join <MASTER-IP>:6443 --token <TOKEN> --discovery-token-ca-cert-hash sha256:<HASH>
+
 🔹 Step 6: Deploy Calico CNI (Networking) [On Master]
-bash
-Copy
-Edit
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/calico.yaml
+
 🔹 Step 7: Verify Cluster
 1. Check if Nodes Joined the Cluster (Run on Master)
-bash
-Copy
-Edit
 kubectl get nodes
 Expected Output:
-
-pgsql
-Copy
-Edit
 NAME     STATUS   ROLES           AGE    VERSION
 master   Ready    control-plane   10m    v1.32.1
 worker1  Ready    <none>          5m     v1.32.1
 worker2  Ready    <none>          5m     v1.32.1
 2. Check Cluster Status
-bash
-Copy
-Edit
+
 kubectl cluster-info
 🔹 Step 8: Install NGINX Ingress Controller (Optional, Run on Master)
-bash
-Copy
-Edit
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
-🎉 Your Kubernetes Cluster is Ready! 🚀
